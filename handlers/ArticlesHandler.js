@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 let articles = require("../content/articles.json");
 
@@ -8,8 +9,110 @@ module.exports = {
     update,
     deleteArticle
 };
+
+const sortFieldDefault = "date";
+const sortOrderDefault = "desc";
+const pageDefault = 1;
+const limitDefault = 10;
+const includeDepsDefault = true;
+
 function readall(req, res, payload, cb) {
-    cb(null, articles);
+    let sortField;
+    let sortOrder;
+    let limit;
+    let page;
+    let Deps;
+
+    if (payload.sortField === undefined) {
+        sortField = sortFieldDefault;
+    }
+    else {
+        sortField = payload.sortField;
+    }
+    if (payload.sortOrder === undefined) {
+        sortOrder = sortOrderDefault;
+    }
+    else {
+        sortOrder = payload.sortOrder;
+    }
+    if (payload.page === undefined) {
+        page = pageDefault;
+    }
+    else {
+        page = payload.page;
+    }
+    if (payload.limit === undefined) {
+        limit = limitDefault;
+    }
+    else {
+        limit = payload.limit;
+    }
+    if (payload.includeDeps === undefined) {
+        Deps = includeDepsDefault;
+    }
+    else {
+        Deps = payload.includeDeps;
+    }
+    let a = 1;
+    if ((articles.length / limit ^ 0) === articles.length / limit)
+        a = 0;    let pages = Math.floor(articles.length / limit) + a;
+    if (page > pages || page < 1) {
+        cb(null, "error");
+        return;
+    }
+
+    console.log(1);
+    if (limit >= articles.length) {
+        cb(null, articles);
+    }
+    else {
+        let whereStart = (limit * page) - 2;
+        let whereEnd;
+        if (page === pages) {
+            whereEnd = articles.length;
+        }
+        else {
+            whereEnd = page * limit;
+        }
+        resultArticles(whereStart, whereEnd, function (res) {
+                for (let i = 0; i < res.length; i++) {
+                    if (!Deps) {
+                        res[i].comment = undefined;
+                    }
+                }
+                res.sort((a, b) => {
+                    if (a[sortField] > b[sortField]) {
+                        return sortOrder === "asc" ? 1 : -1;
+                    }
+                    else {
+                        return sortOrder === "asc" ? -1 : 1;
+                    }
+                });
+
+                let result = {
+                    "meta": {
+                        "page: ": page,
+                        "pages: ": pages,
+                        "count: ": articles.length,
+                        "limit: ": limit
+                    },
+                    "items": res
+                }
+                cb(null, result);
+            }
+        )
+        ;
+    }
+}
+
+function resultArticles(whereStart, whereEnd, callback) { //формируем нужные статьи
+    let result = [];
+    for (i = whereStart; i < whereEnd; i++) {
+        result.push(articles[i]);
+        if (i + 1 == whereEnd) {
+            callback(result);
+        }
+    }
 }
 
 function ExistID(id) {
@@ -42,7 +145,8 @@ function update(req, res, payload, cb) {
                         if (payload.date !== undefined)
                             articles[i].date = payload.date;
                         let result = articles[i];
-                        fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () { });
+                        fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () {
+                        });
                         cb(null, "update");
                     }
                 }
@@ -64,12 +168,7 @@ function read(req, res, payload, cb) {
             result = articles[i];
         }
     }
-    if (result != undefined) {
-        cb(null, result);
-    }
-    else {
-        cb(null, result);
-    }
+    cb(null, result);
 }
 
 function createArticle(req, res, payload, cb) {
@@ -79,7 +178,8 @@ function createArticle(req, res, payload, cb) {
         payload.comment = [];
         payload.date = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
         articles.push(payload);
-        fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () { });
+        fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () {
+        });
         cb(null, "created");
     }
     else {
@@ -91,7 +191,8 @@ function deleteArticle(req, res, payload, cb) {
     ExistID(payload.id).then(
         exist => {
             articles.splice(articles.findIndex(index => index.id === payload.id), 1);
-            fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () { });
+            fs.writeFile("./content/articles.json", JSON.stringify(articles), "utf8", function () {
+            });
             cb(null, {"msg": "Delete success"});
         },
         error => {

@@ -5,26 +5,6 @@ const commentshandlers = require('./handlers/CommentsHandler');
 
 //TODO: create logs, rewrite URL in other file, delete all TODO
 
-const log = "./Log/Log.txt";
-
-function Log(data) {
-    ReadLog().then(
-        result => {
-            let date = new Date();
-            fs.writeFile(log,result + date.toLocaleString() + ": \r\n" + data + '\r\n', "utf8", function () {
-            });
-        })
-}
-
-function ReadLog() {
-    return new Promise((resolve) => {
-        fs.readFile(log, (err, data) => {
-            if (err) throw err;
-            resolve(data);
-        });
-    })
-}
-
 const hostname = '127.0.0.1';
 const port = 3000;
 
@@ -37,6 +17,7 @@ const handlers = {
     '/api/comments/create': commentshandlers.createComment,
     '/api/comments/delete': commentshandlers.deleteComment,
 };
+
 
 const server = http.createServer((req, res) => {
     parseBodyJson(req, (err, payload) => {
@@ -78,7 +59,7 @@ function parseBodyJson(req, cb) {
         body.push(chunk);
     }).on('end', function () {
         body = Buffer.concat(body).toString();
-        Log(req.url + '\r\n' + body);
+
         let params = JSON.parse(body);
 
         cb(null, params);
